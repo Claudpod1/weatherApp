@@ -1,30 +1,48 @@
-import React, { useState } from 'react';
-import { Col, Row, Container } from "reactstrap";
+import React, { useState, useEffect } from 'react';
+import { Container, Row, Col } from "reactstrap";
 import moment from "moment";
 import SearchBar from "./components/SearchBar";
 import DayCard from "./components/DayCard";
 import DayDetails from "./components/DayDetails";
-import sampleData from "./data/sample.json";
-
-
+import API from "./utils/API";
 
 const App = () => {
-
-  const [day, setDay] = useState("Monday");
   const [data, setData] = useState({
-    days: sampleData.data,
-    location: "Denver,CO",
-    selectedNull: null,
+    days: [],
+    location: "",
+    selectedDay: null,
     searchTerm: ""
-  })
-
+  });
   const { days, location, selectedDay, searchTerm } = data;
+
+  useEffect(() => {
+    getWeather("Denver,CO")
+  }, []);
+
+  useEffect (() => {
+    document.title = `This week's weather $(location ? "for" + location : "")`;
+  }, [location]);
+
+
+
+  const getWeather = city => {
+    API.getWeather(city)
+      .then(res =>{
+        console.log(res);
+        setData({
+          searchTerm:"",
+          selectedDay: null, 
+          days: res.data.data,
+          location: res.data.city_name + ", " + res.data.state_code
+        })
+      })
+      .catch(err => console.log(err));
+  }
 
   const setSelectedDay = day => {
     setData({
-      ...data, // copy in the existing state so we dont lose it 
-      selectedDay: day,
-
+      ...data, //copy in the existing state so we don't lost it
+      selectedDay: day //add our change on top of it (overwrite the one key value pair)
     })
   }
 
@@ -32,30 +50,39 @@ const App = () => {
     setData({
       ...data,
       searchTerm: event.target.value
-    })
+    });
   }
 
   const handleFormSubmit = event => {
     event.preventDefault();
-    alert("handlesubmit")
+    if (searchTerm){
+    getWeather(searchTerm);
+    } else{
+      alert("Please put in a city to search")
+    }
   }
 
   return (
     <Container>
       <Row>
-        <Col md={8}> <h1> Weather for {location} </h1></Col>
-        <Col md={4}><SearchBar
-          searchTerm={searchTerm}
-          handleInputChange={handleInputChange}
-          handleFormSubmit={handleFormSubmit} /></Col>
+        <Col md={8}>
+          <h1>Weather for {location}</h1>
+        </Col>
+        <Col md={4}>
+          <SearchBar
+            searchTerm={searchTerm}
+            handleInputChange={handleInputChange}
+            handleFormSubmit={handleFormSubmit}
+          />
+        </Col>
       </Row>
-
       <Row>
         {days.map(day => (
           <DayCard
             key={day.ts}
             day={moment(day.valid_date, "YYYY-MM-DD").format("dddd")}
             current={day.temp}
+            high={day.max_temp}
             low={day.min_temp}
             icon={day.weather.icon}
             description={day.weather.description}
@@ -64,35 +91,25 @@ const App = () => {
           />
         ))}
       </Row>
-
       <Row>
-        {/* <DayDetails 
-          day={moment(selectedDay.valid_date,"YYYY-MM-DD").format("dddd , MMMM , Do, YYYY")}
-          current={selectedDay.temp}
-          low={selectedDay.min_temp}
-          icon={selectedDay.weather.icon}
-          description={selectedDay.weather.description}
-          windSpeed={selectedDay.wind_spd}
-          windDir={selectedDay.wind_cdir_full}
-          precip={selectedDay}
-          /> */}
         <Col>
           {selectedDay ? (
-            day = { moment(selectedDay.valid_date, "YYYY-MM-DD").format("dddd ,MMMM Do, YYYY")}
-          current={selectedDay.temp}
-          low={selectedDay.min_temp}
-          icon={selectedDay.weather.icon}
-          description={selectedDay.weather.description}
-          windSpeed={selectedDay.wind_spd}
-          windDir={selectedDay.wind_cdir_full}
-          precip={selectedDay}
-          )
-        : (
-          <h3> Click on a day above to get weather details</h3>
-          )}
+            <DayDetails
+              day={moment(selectedDay.valid_date, "YYYY-MM-DD").format("dddd, MMMM Do, YYYY")}
+              current={selectedDay.temp}
+              high={selectedDay.max_temp}
+              low={selectedDay.min_temp}
+              icon={selectedDay.weather.icon}
+              description={selectedDay.weather.description}
+              windSpeed={selectedDay.wind_spd}
+              windDir={selectedDay.wind_cdir_full}
+              precip={selectedDay.pop}
+            />
+          ) : (
+              <h3>Click a day above to get the weather details!</h3>
+            )}
         </Col>
       </Row>
-
     </Container>
   );
 }

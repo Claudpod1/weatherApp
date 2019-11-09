@@ -1,7 +1,9 @@
 import axios from "axios";
+const weatherKey = process.env.REACT_APP_WEATHERBIT_KEY;
 
 export default {
-    getWeather: function(location){
-        axios.get(`https://api.weatherbit.io/v2.0/forecast/daily=7&units=I&key=2671f5be92e04cea8ceaef7a9653eef6&city=${city}`)
+    getWeather: function(city){
+        // return promise object 
+        return axios.get(`https://api.weatherbit.io/v2.0/forecast/daily?days=7&units=I&key=${weatherKey}&city=${city}`);
     }
 }
